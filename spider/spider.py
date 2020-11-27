@@ -198,32 +198,32 @@ class Spider(object):
 
     resp = r.json()
     if 'messages' not in resp.keys() or len(resp['messages']) == 0:
-      spider.log.record(f"Couldn't validate response from preprints endpoint.", 'error')
+      self.log.record(f"Couldn't validate response from preprints endpoint.", 'error')
       return
 
     meta = resp['messages'][0]
 
     if meta.get('status') != 'ok':
-      spider.log.record(f"Preprints endpoint responded with non-ok status", 'error')
+      self.log.record(f"Preprints endpoint responded with non-ok status", 'error')
       return
 
     if 'collection' not in resp.keys() or len(resp['collection']) == 0:
-      spider.log.record(f"No results in response from preprints endpoint.", 'error')
+      self.log.record(f"No results in response from preprints endpoint.", 'error')
       return
 
     # turn results into a list
-    spider.log.record(f"Retrieved {len(resp['collection'])} entries on page.")
+    self.log.record(f"Retrieved {len(resp['collection'])} entries on page.")
 
     for entry in resp['collection']:
       if config.polite:
         time.sleep(1)
       article = models.Article(entry)
-      spider.log.record(f'Evaluating article {article.doi}','debug')
+      self.log.record(f'Evaluating article {article.doi}','debug')
       recorded = article.record(self.connection, self)
 
     # request next page
     if meta['count'] + int(meta['cursor']) < meta['total']:
-      spider.log.record('Retrieving next page of results.')
+      self.log.record('Retrieving next page of results.')
       self.find_record_new_articles(repo, cursorid+meta['count'], current)
 
   def fetch_published(self, cursorid=0, current=None):
@@ -237,8 +237,9 @@ class Spider(object):
     start = (current - timedelta(days=3)).strftime('%Y-%m-%d')
     end = current.strftime('%Y-%m-%d')
     self.log.record(f"Fetching publication data from within 3 days of {start} (cursor: {cursorid})", 'debug')
+    url = f'{config.biorxiv["endpoints"]["api"]}/pub/{start}/{end}/{cursorid}'
     try:
-      r = requests.get(f'{config.biorxiv["endpoints"]["api"]}/pub/{start}/{end}/{cursorid}')
+      r = requests.get(url)
     except Exception as e:
       self.log.record(f"Error requesting first page of results from publications endpoint. Retrying: {e}", "error")
       try:
@@ -249,17 +250,17 @@ class Spider(object):
 
     resp = r.json()
     if 'messages' not in resp.keys() or len(resp['messages']) == 0:
-      spider.log.record(f"Couldn't validate response from pub endpoint.", 'error')
+      self.log.record(f"Couldn't validate response from pub endpoint.", 'error')
       return
 
     meta = resp['messages'][0]
 
     if meta.get('status') != 'ok':
-      spider.log.record(f"Pub endpoint responded with non-ok status", 'error')
+      self.log.record(f"Pub endpoint responded with non-ok status", 'error')
       return
 
     if 'collection' not in resp.keys() or len(resp['collection']) == 0:
-      spider.log.record(f"No results in response from pub endpoint.", 'error')
+      self.log.record(f"No results in response from pub endpoint.", 'error')
       return
 
     # turn results into a list
@@ -369,7 +370,7 @@ class Spider(object):
         self.log.record(f"Error AGAIN requesting article metrics. Bailing: {e}", "error")
         return (None, None)
     if resp.status_code != 200:
-      spider.log.record(f"  Got weird status code: {resp.status_code}", 'warn')
+      self.log.record(f"  Got weird status code: {resp.status_code}", 'warn')
       if retry_count < 2:
         time.sleep(5)
         return self.get_article_stats(url, retry_count+1)
@@ -416,17 +417,17 @@ class Spider(object):
         return
     resp = r.json()
     if 'messages' not in resp.keys() or len(resp['messages']) == 0:
-      spider.log.record(f"Couldn't validate response from details endpoint.", 'error')
+      self.log.record(f"Couldn't validate response from details endpoint.", 'error')
       return
 
     meta = resp['messages'][0]
 
     if meta.get('status') != 'ok':
-      spider.log.record(f"Details endpoint responded with non-ok status", 'error')
+      self.log.record(f"Details endpoint responded with non-ok status", 'error')
       return
 
     if 'collection' not in resp.keys() or len(resp['collection']) == 0:
-      spider.log.record(f"No results in response from details endpoint.", 'error')
+      self.log.record(f"No results in response from details endpoint.", 'error')
       return
     for entry in resp['collection']:
       if entry.get('version') == '1':
@@ -434,7 +435,7 @@ class Spider(object):
         break
     if date is not None:
       with self.connection.db.cursor() as cursor:
-        spider.log.record(f'Setting posted date {date} for article {article_id}')
+        self.log.record(f'Setting posted date {date} for article {article_id}')
         cursor.execute("UPDATE articles SET posted=%s WHERE id=%s;", (date, article_id))
 
   def save_article_stats(self, article_id, stats):
@@ -820,8 +821,8 @@ class Spider(object):
       cursor.execute("SELECT COUNT(id) FROM crossref_daily WHERE source_date=%s", (current.strftime('%Y-%m-%d'),))
       data_count = cursor.fetchone()[0]
       if data_count == 0:
-        spider.log.record("Fetching yesterday's Crossref data one more time.", "info")
-        spider._pull_crossref_data_date((current - timedelta(days=1)).strftime('%Y-%m-%d'))
+        self.log.record("Fetching yesterday's Crossref data one more time.", "info")
+        self._pull_crossref_data_date((current - timedelta(days=1)).strftime('%Y-%m-%d'))
     self.log.record("Fetching today's Crossref data.")
     self._pull_crossref_data_date(current.strftime('%Y-%m-%d'))
 

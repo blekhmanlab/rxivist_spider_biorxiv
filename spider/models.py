@@ -94,14 +94,11 @@ class Author:
           cursor.execute("INSERT INTO author_emails (author, email) VALUES (%s, %s);", (self.id, self.email))
 
 class Article:
-  # This class is disconcertingly intermingled with the Spider class,
-  # a problem that is probably most easily remedied by folding the whole
-  # thing into the spider rather than trying to pry them apart, unfortunately
+  # This class is disconcertingly intermingled with the Spider class
   def __init__(self, entry):
     self.title = entry.get('title')
     self.doi = entry.get('doi')
-    self.collection = entry.get('category')
-    self.collection = None
+    self.collection = entry.get('category').replace(' ', '-')
     self.abstract = entry.get('abstract')
     self.version = entry.get('version')
     self.posted = entry.get('date')
