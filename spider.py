@@ -184,6 +184,11 @@ class Spider(object):
       current = datetime.now()
     start = (current - timedelta(days=1)).strftime('%Y-%m-%d')
     end = current.strftime('%Y-%m-%d')
+
+    # HACK: Uncomment these lines to run a query with a manually defined range of dates
+    # start = '2020-11-01'
+    # end = '2020-11-26'
+    ########
     self.log.record(f"Fetching new preprints data from within 1 day of {start} (cursor: {cursorid})", 'debug')
     url = f'{config.biorxiv["endpoints"]["api"]}/details/{repo}/{start}/{end}/{cursorid}'
     try:

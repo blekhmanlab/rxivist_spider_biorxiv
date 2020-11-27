@@ -26,7 +26,7 @@ crawl = {
 }
 
 repos = {
-  'biorxiv': False,
+  'biorxiv': True,
   'medrxiv': True
 }
 
@@ -73,15 +73,6 @@ polite = True
 # the status.
 reset_pubstatus = False
 
-# whether to stop crawling once we've encountered a set
-# number of papers that we've already recorded. setting this
-# to 0 would make sense, except if papers are added to a
-# collection WHILE you're indexing it, the crawler dies early.
-# (if this is set to False, the crawler will go through every
-# single page of results for a collection, which is probably
-# wasteful.)
-stop_on_recognized = True
-
 # The crawler uses temporary files to speed up database writes.
 # Setting this flag to True will delete them after they're processed.
 delete_csv = True
@@ -105,7 +96,7 @@ crossref = {
     "events": "https://api.eventdata.crossref.org/v1/events"
   },
   "parameters": {
-    "email": "rxivist@YOUR_URL_HERE.org" # an email address to attach to each Crossref call, per their request
+    "email": "rxivist@YOUR_URL_HERE.edu" # an email address to attach to each Crossref call, per their request
   }
 }
 
