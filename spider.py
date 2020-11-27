@@ -345,6 +345,7 @@ class Spider(object):
         stat_table, authors = self.get_article_stats(url)
         if stat_table is None:
           self.log.record('No results returned. Moving on to next article.', 'warn')
+          self._record_article_touch(article_id)
           consec_errors += 1
           continue
         else:
@@ -377,7 +378,7 @@ class Spider(object):
         return (None, None)
     if resp.status_code != 200:
       self.log.record(f"  Got weird status code: {resp.status_code}", 'warn')
-      if retry_count < 2:
+      if retry_count < 1:
         time.sleep(5)
         return self.get_article_stats(url, retry_count+1)
       else:
@@ -481,6 +482,15 @@ class Spider(object):
       cursor.execute(f"UPDATE {config.db['schema']}.articles SET last_crawled = CURRENT_DATE WHERE id=%s", (article_id,))
 
       self.log.record(f"Recorded {len(to_record)} stats for ID {article_id}", "debug")
+
+  def _record_article_touch(self, article_id):
+    """
+    When we try to update a paper and get an error, we should still
+    update the "last_crawled" date to avoid checking the same errored-out
+    preprints every time we refresh.
+    """
+    with self.connection.db.cursor() as cursor:
+      cursor.execute(f"UPDATE {config.db['schema']}.articles SET last_crawled = CURRENT_DATE WHERE id=%s", (article_id,))
 
   def _record_authors(self, article_id, authors, overwrite=False):
     with self.connection.db.cursor() as cursor:
