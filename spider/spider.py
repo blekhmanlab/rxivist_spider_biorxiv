@@ -351,7 +351,8 @@ class Spider(object):
         if config.record_authors_on_refresh is True or id is not None:
           # Always refresh authors if a specific article ID is given
           overwrite = True
-        self._record_authors(article_id, authors, overwrite)
+        if authors is not None:
+          self._record_authors(article_id, authors, overwrite)
         updated += 1
         if config.limit_refresh is not False and updated >= cap:
           self.log.record("Maximum articles reached for this session. Returning.")
