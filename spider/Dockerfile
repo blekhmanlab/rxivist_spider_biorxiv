@@ -2,10 +2,7 @@ FROM postgres:12
 LABEL maintainer="Richard Abdill rxivist@umn.edu"
 
 RUN apt-get update
-RUN echo deb http://ftp.de.debian.org/debian testing main >> /etc/apt/sources.list
-RUN echo 'APT::Default-Release "stable";' | tee -a /etc/apt/apt.conf.d/00local
-RUN apt-get update
-RUN apt-get -t testing install -y python3.6 python3-pip
+RUN apt-get install -y python3 python3-pip
 
 # TODO: these env vars shouldn't be necessary
 ENV LANGUAGE="C"
