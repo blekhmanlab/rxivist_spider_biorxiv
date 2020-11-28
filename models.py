@@ -181,12 +181,3 @@ class Article:
       # if the first time we see an article ISN'T the first version, we should
       # check to get the date from V1.
       spider.record_article_posted_date(self.id, self.doi, self.repo)
-
-  def get_id(self, connection):
-    with connection.db.cursor() as cursor:
-      cursor.execute("SELECT id FROM articles WHERE doi=%s", (self.doi,))
-      response = cursor.fetchone()
-      if response is None or len(response) == 0:
-        return False
-      self.id = response[0]
-    return True

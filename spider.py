@@ -965,10 +965,10 @@ def full_run(spider):
   if config.crawl["fetch_missing_fields"] is not False:
     for repo in ['biorxiv','medrxiv']:
       if config.repos[repo]:
-        spider.get_urls()
         spider.get_posted_dates(repo)
         #spider.refresh_article_stats(get_authors=True) # Fix authorless papers
-        spider.remove_orphan_authors()
+    spider.get_urls()
+    spider.remove_orphan_authors()
 
   if config.crawl["fetch_new"] is not False:
     for repo in ['biorxiv','medrxiv']:
@@ -1006,8 +1006,6 @@ def full_run(spider):
 
   if config.perform_ranks["enabled"] is not False:
     spider.process_rankings()
-  else:
-    spider.log.record("Skipping all ranking steps: disabled in configuration file.", 'debug')
 
 def find_authors(response):
   # Determine author details:
