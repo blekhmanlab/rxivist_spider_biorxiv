@@ -967,7 +967,7 @@ def full_run(spider):
       if config.repos[repo]:
         spider.get_urls()
         spider.get_posted_dates(repo)
-        spider.refresh_article_stats(get_authors=True) # Fix authorless papers
+        #spider.refresh_article_stats(get_authors=True) # Fix authorless papers
         spider.remove_orphan_authors()
 
   if config.crawl["fetch_new"] is not False:
