@@ -436,6 +436,8 @@ class Spider(object):
     if 'collection' not in resp.keys() or len(resp['collection']) == 0:
       self.log.record(f"No results in response from details endpoint.", 'error')
       return
+
+    date = None
     for entry in resp['collection']:
       if entry.get('version') == '1':
         date = entry.get('date')
