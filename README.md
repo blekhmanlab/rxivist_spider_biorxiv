@@ -26,8 +26,8 @@ The spider uses a separate configuration file (`config.py`) from the one used by
 You can use a technique similar to the one described in [the API's README](https://github.com/blekhmanlab/rxivist/blob/master/README.md) for running the spider without rebuilding the container every time your code changes:
 
 ```sh
-git clone https://github.com/blekhmanlab/rxivist.git
-cd rxivist/spider
+git clone https://github.com/blekhmanlab/rxivist_spider_biorxiv.git
+cd rxivist_spider_biorxiv/
 docker run -it --rm --name rxspider -v "$(pwd)":/app --env RX_DBUSER --env RX_DBPASSWORD --env RX_DBHOST python:slim bash
 
 # You will now be in a shell within the container:

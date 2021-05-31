@@ -2,7 +2,7 @@
 #     and organizing them in ways that make it easier to find new
 #     or interesting research. Includes a web application for
 #     the display of data.
-#     Copyright (C) 2019 Regents of the University of Minnesota
+#     Copyright (C) 2019–2021 Regents of the University of Minnesota
 
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU Affero General Public License as
@@ -94,18 +94,23 @@ class Spider(object):
           self.log.record(f'Fetching date for {x[0]}.')
           self.record_article_posted_date(x[0], x[1], repo)
 
-  def _pull_crossref_data_date(self, datestring, retry=True):
+  def _pull_crossref_data_date(self, datestring, cursorid=None, retry=True):
     # Datestring should be format YYYY-MM-DD
     self.log.record(f"Beginning retrieval of Crossref data for {datestring}", "info")
     headers = {'user-agent': config.user_agent}
+
+    reqstring = "{0}?obj-id.prefix=10.1101&from-occurred-date={1}&until-occurred-date={1}&source=twitter&mailto={2}&rows=1000".format(config.crossref["endpoints"]["events"], datestring, config.crossref["parameters"]["email"])
+    if cursorid is not None:
+      reqstring += f"&cursor={cursorid}"
+
     try:
-      r = requests.get("{0}?obj-id.prefix=10.1101&from-occurred-date={1}&until-occurred-date={1}&source=twitter&mailto={2}&rows=10000".format(config.crossref["endpoints"]["events"], datestring, config.crossref["parameters"]["email"]), headers=headers, timeout=30)
+      r = requests.get(reqstring, headers=headers, timeout=30)
     except Exception as e:
       self.log.record(f'Problem sending request to Crossref: {e}.', 'error')
       if retry: # only retry once
-        self.log.record("Retrying request: {0}?obj-id.prefix=10.1101&from-occurred-date={1}&until-occurred-date={1}&source=twitter&mailto={2}&rows=10000".format(config.crossref["endpoints"]["events"], datestring, config.crossref["parameters"]["email"]), 'info')
+        self.log.record(f"Retrying request: {reqstring}", 'info')
         time.sleep(6)
-        return self._pull_crossref_data_date(datestring, retry=False)
+        return self._pull_crossref_data_date(datestring, cursorid=cursorid, retry=False)
       else:
         self.log.record('No more retries. Exiting.', 'fatal')
         return
@@ -113,34 +118,25 @@ class Spider(object):
     if r.status_code != 200:
       self.log.record(f"Got weird status code: {r.status_code}", "error")
       if retry:
-        self.log.record("Retrying request: {0}?obj-id.prefix=10.1101&from-occurred-date={1}&until-occurred-date={1}&source=twitter&mailto={2}&rows=10000".format(config.crossref["endpoints"]["events"], datestring, config.crossref["parameters"]["email"]), 'info')
+        self.log.record(f"Retrying request: {reqstring}", 'info')
         time.sleep(6)
-        return self._pull_crossref_data_date(datestring, retry=False)
+        return self._pull_crossref_data_date(datestring, cursorid=cursorid, retry=False)
       return
     results = r.json()
 
     if results["status"] != "ok":
       self.log.record(f'Crossref responded, but with unexpected status: {results["status"]}', "error")
       if retry:
-        self.log.record("Retrying request: {0}?obj-id.prefix=10.1101&from-occurred-date={1}&until-occurred-date={1}&source=twitter&mailto={2}&rows=10000".format(config.crossref["endpoints"]["events"], datestring, config.crossref["parameters"]["email"]), 'info')
+        self.log.record(f"Retrying request: {reqstring}", 'info')
         time.sleep(6)
-        return self._pull_crossref_data_date(datestring, retry=False)
+        return self._pull_crossref_data_date(datestring, cursorid=cursorid, retry=False)
       return
     if "message" not in results.keys() or "events" not in results["message"].keys() or len(results["message"]["events"]) == 0:
       self.log.record("Events not found in response.", "error")
-      # this retry has never worked
-      # if retry:
-      #   self.log.record("Retrying request: {0}?obj-id.prefix=10.1101&from-occurred-date={1}&until-occurred-date={1}&source=twitter&mailto={2}&rows=10000".format(config.crossref["endpoints"]["events"], datestring, config.crossref["parameters"]["email"]), 'info')
-      #   time.sleep(6)
-      #   return self._pull_crossref_data_date(datestring, retry=False)
       return
 
     tweets = defaultdict(list)
-    if results["message"]["total-results"] > 10000:
-      # Odds are we're never going to get more than one page here, so
-      # let's put off the implemention of pagination until that day
-      # is upon us
-      self.log.record(f'TOO MANY RESULTS: {results["message"]["total-results"]}', "fatal")
+
     for event in results["message"]["events"]:
       if event.get("source_id") != "twitter": # double-check that it's filtering right
         self.log.record(f'Unrecognized source_id field: {event.get("source_id", "(not provided)")}. Skipping.', "info")
@@ -171,7 +167,10 @@ class Spider(object):
     self.log.record(f"Saving tweet data for {len(tweets.keys())} DOI entries.")
     with self.connection.db.cursor() as cursor:
       cursor.executemany(sql, params)
-    self.log.record("Done with crossref.", "debug")
+
+    if results["message"]["next-cursor"] is not None:
+      self.log.record('Fetching next page.', 'debug')
+      return self._pull_crossref_data_date(datestring, cursorid=results["message"]["next-cursor"])
 
   def find_record_new_articles(self, repo, cursorid=0, current=None):
     self.log.record(f'Starting new article search for {repo}', 'info')
