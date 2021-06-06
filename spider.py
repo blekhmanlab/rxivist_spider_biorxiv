@@ -23,7 +23,7 @@
 #     http://blekhmanlab.org/
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import json
 import math
 import os
@@ -1171,6 +1171,17 @@ if __name__ == "__main__":
       spider._pull_crossref_data_date(sys.argv[2])
     else:
       spider.pull_todays_crossref_data()
+  elif sys.argv[1] == "crossref_multi":
+    # this indicates the date param is a START date, not the ONLY date
+    # taking input as the date
+    curdate = date.fromisoformat(sys.argv[2])
+
+    while curdate < date.today():
+      print(curdate)
+      time.sleep(1)
+      spider._pull_crossref_data_date(curdate.isoformat())
+      curdate = curdate + timedelta(days=1)
+
   elif sys.argv[1] == "pubdates":
     # This task probably doesn't need to be run during EVERY refresh
     get_publication_dates(spider)
